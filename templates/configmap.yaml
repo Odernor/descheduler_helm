@@ -1,0 +1,43 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Release.Name }}-policy-configmap"
+  namespace: {{ .Release.Namespace }}
+data:
+  policy.yaml: |
+    apiVersion: "descheduler/v1alpha1"
+    kind: "DeschedulerPolicy"
+    strategies:
+    {{- if .Values.descheduler.policies.RemoveDuplicates.enabled }}
+      "RemoveDuplicates":
+        enabled: true
+    {{- end }}
+    {{- if .Values.descheduler.policies.RemovePodsViolatingInterPodAntiAffinity.enabled }}
+      "RemovePodsViolatingInterPodAntiAffinity":
+        enabled: true
+    {{- end }}
+    {{- if .Values.descheduler.policies.RemovePodsViolatingNodeAffinity.enabled }}
+      "RemovePodsViolatingNodeAffinity":
+        enabled: true
+        params:
+          nodeAffinityType:
+          {{- range .Values.descheduler.policies.RemovePodsViolatingNodeAffinity.nodeAffinityType }}
+          - {{ . }}
+          {{- end }}
+    {{- end }}
+    {{- if .Values.descheduler.policies.LowNodeUtilization.enabled }}
+      "LowNodeUtilization":
+        enabled: true
+        params:
+          nodeResourceUtilizationThresholds:
+            thresholds:
+              "cpu" : {{ .Values.descheduler.policies.LowNodeUtilization.thresholds.cpu }}
+              "memory": {{ .Values.descheduler.policies.LowNodeUtilization.thresholds.memory }}
+              "pods": {{ .Values.descheduler.policies.LowNodeUtilization.thresholds.pods }}
+            targetThresholds:
+              "cpu" : {{ .Values.descheduler.policies.LowNodeUtilization.targetThresholds.cpu }}
+              "memory": {{ .Values.descheduler.policies.LowNodeUtilization.targetThresholds.memory }}
+              "pods": {{ .Values.descheduler.policies.LowNodeUtilization.targetThresholds.memory }}
+    {{- end }}
+

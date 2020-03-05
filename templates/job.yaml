@@ -1,0 +1,34 @@
+{{ if .Values.descheduler.Job.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-job"
+  namespace: {{ .Release.Namespace }}
+spec:
+  parallelism: {{ .Values.descheduler.Job.parallelism }}
+  completions: {{ .Values.descheduler.Job.completions }}
+  template:
+    metadata:
+      name: "{{ .Release.Name }}-pod"
+    spec:
+      priorityClassName: system-cluster-critical
+      containers:
+      - name: {{ .Release.Name }}
+        image: "{{ .Values.descheduler.container.image }}:{{ .Values.descheduler.container.imageversion }}"
+        volumeMounts:
+        - mountPath: /policy-dir
+          name: "{{ .Release.Name }}-policy-volume"
+        command:
+          - "/bin/descheduler"
+        args:
+          - "--policy-config-file"
+          - "/policy-dir/policy.yaml"
+          - "--v"
+          - "{{ .Values.descheduler.cronJob.verbose }}"
+      restartPolicy: "Never"
+      serviceAccountName: "{{ .Release.Name }}-sa"
+      volumes:
+      - name: "{{ .Release.Name }}-policy-volume"
+        configMap:
+          name: "{{ .Release.Name }}-policy-configmap"
+{{ end }}

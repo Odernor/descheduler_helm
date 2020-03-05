@@ -1,0 +1,41 @@
+name: descheduler
+namespace: kube-system
+
+descheduler:
+  container:
+    image: us.gcr.io/k8s-artifacts-prod/descheduler/descheduler
+    imageversion: v0.10.0
+  Job:
+    enabled: false
+    verbose: 3
+    parallelism: 1
+    completions: 1
+  cronJob:
+    enabled: true
+    schedule: "*/2 * * * *"
+    scheduling_enabled: true
+    verbose: 3
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 1
+  policies:
+    RemoveDuplicates:
+      enabled: true
+    RemovePodsViolatingInterPodAntiAffinity:
+      enabled: true
+    RemovePodsViolatingNodeAffinity:
+      enabled: true
+      nodeAffinityType:
+      - requiredDuringSchedulingIgnoredDuringExecution
+      # - preferredDuringSchedulingIgnoredDuringExecution
+    RemovePodsViolatingNodeTaints:
+      enabled: false
+    LowNodeUtilization:
+      enabled: false
+      thresholds:
+        cpu: 20
+        memory: 20
+        pods: 20
+      targetThresholds:
+        cpu: 50
+        memory: 50
+        pods: 50

@@ -1,0 +1,42 @@
+{{ if .Values.descheduler.cronJob.enabled }}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: "{{ .Release.Name }}-cronjob"
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "{{ .Values.descheduler.cronJob.schedule }}"
+  {{- if .Values.descheduler.cronJob.scheduling_enabled }}
+  suspend: false
+  {{ else }}
+  suspend: true
+  {{- end }}
+  concurrencyPolicy: "Forbid"
+  failedJobsHistoryLimit: {{ .Values.descheduler.cronJob.failedJobsHistoryLimit }}
+  successfulJobsHistoryLimit: {{ .Values.descheduler.cronJob.successfulJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          name: "{{ .Release.Name }}-pod"
+        spec:
+          priorityClassName: system-cluster-critical
+          containers:
+          - name: {{ .Release.Name }}
+            image: "{{ .Values.descheduler.container.image }}:{{ .Values.descheduler.container.imageversion }}"
+            volumeMounts:
+            - mountPath: /policy-dir
+              name: "{{ .Release.Name }}-policy-volume"
+            command:
+              - "/bin/descheduler"
+            args:
+              - "--policy-config-file"
+              - "/policy-dir/policy.yaml"
+              - "--v"
+              - "{{ .Values.descheduler.cronJob.verbose }}"
+          restartPolicy: "Never"
+          volumes:
+          - name: "{{ .Release.Name }}-policy-volume"
+            configMap:
+              name: "{{ .Release.Name }}-policy-configmap"
+{{ end }}
